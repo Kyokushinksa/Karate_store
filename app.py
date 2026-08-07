@@ -1,215 +1,125 @@
-import pandas as pd
 import streamlit as st
+import pandas as pd
 import os
 from datetime import datetime
 
-# إعدادات الصفحة
-st.set_page_config(
-    page_title="نظام إدارة مبيعات بدل الكاراتيه", page_icon="🥋", layout="wide"
-)
+# ملفات البيانات
+SALES_FILE = 'data.csv'
+SUPPLIERS_FILE = 'suppliers.csv'
 
-# اسم ملف حفظ البيانات
-DATA_FILE = "karate_sales_data.csv"
+# تحميل المبيعات
+def load_sales():
+    if not os.path.exists(SALES_FILE):
+        return pd.DataFrame(columns=['التاريخ', 'اسم الزبون', 'نوع البدلة', 'المقاس', 'المورد', 'حالة الدفع', 'تاريخ الوصول', 'حالة العميل'])
+    return pd.read_csv(SALES_FILE)
 
+def save_sales(df):
+    df.to_csv(SALES_FILE, index=False)
 
-# تحميل أو إنشاء قاعدة البيانات
-def load_data():
-  if os.path.exists(DATA_FILE):
-    return pd.read_csv(DATA_FILE)
-  else:
-    # إنشاء جدول فارغ بالأعمدة المطلوبة
-    df = pd.DataFrame(columns=[
-        "رقم الفاتورة",
-        "التاريخ",
-        "اسم الزبون / المتدرب",
-        "نوع البدلة",
-        "المقاس",
-        "السعر الإجمالي (ريال)",
-        "المبلغ المدفوع (ريال)",
-        "المتبقي (ريال)",
-        "حالة الدفع",
-    ])
-    return df
+# تحميل الموردين
+def load_suppliers():
+    if not os.path.exists(SUPPLIERS_FILE):
+        return pd.DataFrame(columns=['اسم المورد', 'رقم الجوال', 'الموقع', 'البراندات', 'الحالة'])
+    return pd.read_csv(SUPPLIERS_FILE)
 
+def save_suppliers(df):
+    df.to_csv(SUPPLIERS_FILE, index=False)
 
-df = load_data()
+st.set_page_config(page_title="نظام إدارة بدل الكاراتيه", layout="wide")
+st.title("🥋 نظام إدارة مبيعات ومقاسات بدل الكاراتيه والموردين")
 
-# عنوان التطبيق
-st.title("🥋 نظام إدارة مبيعات ومقاسات بدل الكاراتيه")
-st.markdown("---")
+# القائمة الجانبية
+menu = st.sidebar.selectbox("القائمة الرئيسية", ["تسجيل بيع جديد", "سجل المبيعات", "إدارة الموردين", "متابعة الديون والمنقطعين"])
 
-# القائمة الجانبية للتنقل بين الصفحات
-menu = st.sidebar.selectbox(
-    "اختر القناة:",
-    ["تسجيل بيع جديد", "سجل المبيعات والحسابات", "إدارة المخزون والمقاسات"],
-)
-
-# ---------------------------------------------------------
-# 1. صفحة تسجيل بيع جديد
-# ---------------------------------------------------------
 if menu == "تسجيل بيع جديد":
-  st.header("📝 تسجيل عملية بيع جديدة")
+    st.subheader("📝 تسجيل عملية بيع جديدة")
+    
+    suppliers_df = load_suppliers()
+    supplier_list = suppliers_df['اسم المورد'].tolist() if not suppliers_df.empty else ["لا توجد موردين مضافين"]
 
-  with st.form("sale_form"):
-    col1, col2 = st.columns(2)
+    with st.form("sale_form"):
+        name = st.text_input("اسم الزبون")
+        suit_type = st.selectbox("نوع البدلة", ["بدلة كاتا ثقيلة", "بدلة كوميتيه خفيفة", "بدلة تدريب عادية"])
+        size = st.text_input("المقاس")
+        supplier = st.selectbox("المورد", supplier_list)
+        payment_status = st.selectbox("حالة الدفع", ["تم الدفع", "لم يدفع بعد"])
+        arrival_date = st.date_input("تاريخ وصول البدلة")
+        client_status = st.selectbox("حالة العميل", ["نشط", "منقطع / مؤرشف"])
+        
+        submit = st.form_submit_button("حفظ العملية")
+        
+        if submit:
+            df = load_sales()
+            new_data = {
+                'التاريخ': datetime.now().strftime("%Y-%m-%d"), 
+                'اسم الزبون': name, 
+                'نوع البدلة': suit_type, 
+                'المقاس': size, 
+                'المورد': supplier, 
+                'حالة الدفع': payment_status, 
+                'تاريخ الوصول': arrival_date,
+                'حالة العميل': client_status
+            }
+            df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
+            save_sales(df)
+            st.success("تم حفظ العملية بنجاح!")
 
-    with col1:
-      customer_name = st.text_input("اسم الزبون / المتدرب")
-      suit_type = st.selectbox(
-          "نوع البدلة",
-          [
-              "بدلة كاتا ثقيلة (Kata)",
-              "بدلة كوميتي خفيفة (Kumite)",
-              "بدلة تدريب عادي",
-          ],
-      )
-      size = st.selectbox(
-          "المقاس",
-          [
-              "مقاس 000 / 110 سم",
-              "مقاس 00 / 120 سم",
-              "مقاس 0 / 130 سم",
-              "مقاس 1 / 140 سم",
-              "مقاس 2 / 150 سم",
-              "مقاس 3 / 160 سم",
-              "مقاس 4 / 170 سم",
-              "مقاس 5 / 180 سم",
-              "مقاس 6 / 190 سم",
-          ],
-      )
-
-    with col2:
-      total_price = st.number_input(
-          "السعر الإجمالي (ريال)", min_value=0.0, step=10.0
-      )
-      paid_amount = st.number_input(
-          "المبلغ المدفوع (ريال)", min_value=0.0, step=10.0
-      )
-
-    submitted = st.form_submit_button("حفظ العملية")
-
-    if submitted:
-      if not customer_name:
-        st.warning("⚠️ يرجى إدخال اسم الزبون أو المتدرب.")
-      else:
-        # حساب المتبقي
-        remaining = total_price - paid_amount
-        payment_status = "خالص" if remaining <= 0 else "متبقي مبلغ"
-
-        # توليد رقم فاتورة فريد يعتمد على التاريخ والوقت
-        invoice_id = datetime.now().strftime("%Y%m%d%H%M%S")
-        current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-
-        # إضافة البيانات للجدول
-        new_row = {
-            "رقم الفاتورة": invoice_id,
-            "التاريخ": current_date,
-            "اسم الزبون / المتدرب": customer_name,
-            "نوع البدلة": suit_type,
-            "المقاس": size,
-            "السعر الإجمالي (ريال)": total_price,
-            "المبلغ المدفوع (ريال)": paid_amount,
-            "المتبقي (ريال)": remaining,
-            "حالة الدفع": payment_status,
-        }
-
-        # استخدام pandas لإضافة السطر وحفظه
-        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-        df.to_csv(DATA_FILE, index=False)
-
-        st.success(
-            f"✅ تم تسجيل العملية بنجاح! المبلغ المتبقي على الزبون: **{remaining}"
-            " ريال**"
-        )
-
-# ---------------------------------------------------------
-# 2. صفحة سجل المبيعات والحسابات
-# ---------------------------------------------------------
-elif menu == "سجل المبيعات والحسابات":
-  st.header("📊 سجل المبيعات والديون والمتبقيات")
-
-  if df.empty:
-    st.info("لا توجد مبيعات مسجلة حتى الآن.")
-  else:
-    # إحصائيات سريعة
-    total_sales = df["السعر الإجمالي (ريال)"].sum()
-    total_collected = df["المبلغ المدفوع (ريال)"].sum()
-    total_remaining = df["المتبقي (ريال)"].sum()
-
-    col1, col2, col3 = st.columns(3)
-    col1.metric("إجمالي المبيعات", f"{total_sales} ريال")
-    col2.metric("المبالغ المحصلة", f"{total_collected} ريال")
-    col3.metric("إجمالي الديون (المتبقي)", f"{total_remaining} ريال")
-
-    st.markdown("---")
-
-    # خيار البحث عن زبون
-    search_query = st.text_input(
-        "🔍 بحث بالاسم أو رقم الفاتورة:", ""
-    )
-    if search_query:
-      filtered_df = df[
-          df["اسم الزبون / المتدرب"]
-              .str.contains(search_query, na=False)
-          | df["رقم الفاتورة"].astype(str).str.contains(search_query, na=False)
-      ]
+elif menu == "سجل المبيعات":
+    st.subheader("📊 سجل المبيعات الكامل")
+    df = load_sales()
+    if not df.empty:
+        filter_status = st.radio("عرض حسب حالة العميل:", ["النشطين فقط", "المنقطعين فقط", "الكل"], horizontal=True)
+        if filter_status == "النشطين فقط":
+            df = df[df['حالة العميل'] == "نشط"]
+        elif filter_status == "المنقطعين فقط":
+            df = df[df['حالة العميل'] == "منقطع / مؤرشف"]
+            
+        st.dataframe(df, use_container_width=True)
     else:
-      filtered_df = df
+        st.info("لا توجد مبيعات مسجلة حتى الآن.")
 
-    # عرض الجدول
-    st.dataframe(filtered_df, use_container_width=True)
+elif menu == "إدارة الموردين":
+    st.subheader("🤝 دفتر الموردين والبراندات")
+    
+    with st.form("supplier_form"):
+        sup_name = st.text_input("اسم المورد / الشركة")
+        sup_phone = st.text_input("رقم الجوال")
+        sup_location = st.text_input("الموقع (المدينة / الحي)")
+        sup_brands = st.text_input("البراندات التي يوردها")
+        sup_status = st.selectbox("حالة التعامل مع المورد", ["نشط", "منقطع التعامل"])
+        
+        sup_submit = st.form_submit_button("حفظ المورد")
+        
+        if sup_submit:
+            sup_df = load_suppliers()
+            new_sup = {
+                'اسم المورد': sup_name,
+                'رقم الجوال': sup_phone,
+                'الموقع': sup_location,
+                'البراندات': sup_brands,
+                'الحالة': sup_status
+            }
+            sup_df = pd.concat([sup_df, pd.DataFrame([new_sup])], ignore_index=True)
+            save_suppliers(sup_df)
+            st.success("تم حفظ المورد بنجاح! (قم بتحديث الصفحة لتظهر القائمة)")
+            
+    st.markdown("---")
+    st.subheader("قائمة الموردين الحاليين")
+    sup_df = load_suppliers()
+    if not sup_df.empty:
+        st.dataframe(sup_df, use_container_width=True)
+    else:
+        st.info("لم يتم إضافة أي موردين بعد.")
 
-    # زر لتصدير البيانات أو مسح السجلات إذا لزم الأمر
-    if st.button("حذف كافة السجلات (إعادة ضبط)"):
-      if os.path.exists(DATA_FILE):
-        os.remove(DATA_FILE)
-        st.success("تم مسح السجلات بنجاح. أعد تحميل الصفحة.")
-        st.rerun()
-
-# ---------------------------------------------------------
-# 3. صفحة إدارة المخزون والمقاسات
-# ---------------------------------------------------------
-elif menu == "إدارة المخزون والمقاسات":
-  st.header("📦 نظرة عامة على مقاسات البدل المتاحة")
-  st.write(
-      "هنا يمكنك اعتماد دليل المقاسات الخاص بك ليكون مرجعاً أثناء عملية البيع:"
-  )
-
-  sizes_guide = {
-      "المقاس": [
-          "مقاس 000",
-          "مقاس 00",
-          "مقاس 0",
-          "مقاس 1",
-          "مقاس 2",
-          "مقاس 3",
-          "مقاس 4",
-          "مقاس 5",
-          "مقاس 6",
-      ],
-      "الطول المناسب للاعب": [
-          "110 سم",
-          "120 سم",
-          "130 سم",
-          "140 سم",
-          "150 سم",
-          "160 سم",
-          "170 سم",
-          "180 سم",
-          "190 سم",
-      ],
-      "الفئة المستهدفة": [
-          "أطفال صغار جداً",
-          "أطفال",
-          "أطفال / ناشئين",
-          "ناشئين",
-          "شباب",
-          "شباب / كبار",
-          "كبار",
-          "كبار طوال",
-          "أحجام خاصّة / كبار جداً",
-      ],
-  }
-
-  guide_df = pd.DataFrame(sizes_guide)
-  st.table(guide_df)
+elif menu == "متابعة الديون والمنقطعين":
+    st.subheader("🗄️ متابعة الديون والعملاء")
+    df = load_sales()
+    if not df.empty:
+        unpaid = df[df['حالة الدفع'] == "لم يدفع بعد"]
+        st.markdown("### ⚠️ عملاء لم يدفعوا حتى الآن (ديون معلقة):")
+        if not unpaid.empty:
+            st.dataframe(unpaid[['التاريخ', 'اسم الزبون', 'نوع البدلة', 'المقاس', 'المورد']], use_container_width=True)
+        else:
+            st.success("رائع! جميع العملاء قاموا بالسداد.")
+    else:
+        st.info("لا توجد بيانات كافية بعد.")
