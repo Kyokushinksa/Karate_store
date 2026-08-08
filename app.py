@@ -5,19 +5,19 @@ import os
 # --- 1. إعدادات الصفحة ---
 st.set_page_config(page_title="نظام الكاراتيه", page_icon="🥋", layout="wide")
 
-# --- 2. المتغيرات الأساسية (يمكنك تعديلها) ---
-SECRET_PIN = "1234"  # <-- غير هذا الرقم إلى أي رقم سري تريده
-# رابط صورة الكانجي والكانكوداي
-IMAGE_URL = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Kyokushin_kanji.svg/800px-Kyokushin_kanji.svg.png" 
+# --- 2. المتغيرات الأساسية ---
+SECRET_PIN = "1234"  # الرقم السري للدخول
+# رابط شعار الكيوكوشن المباشر والآمن
+IMAGE_URL = "https://upload.wikimedia.org/wikipedia/commons/1/12/Kyokushin_kanji.svg" 
 
-# --- 3. إنشاء ملفات البيانات محلياً (آمن جداً) ---
+# --- 3. إنشاء ملفات البيانات محلياً (مع قراءة المقاسات كنصوص حصرياً) ---
 def init_files():
     if not os.path.exists("sales.csv"):
         pd.DataFrame(columns=["التاريخ", "اسم العميل", "رقم الجوال", "المنتج", "المقاس", "السعر"]).to_csv("sales.csv", index=False)
     if not os.path.exists("suppliers.csv"):
         pd.DataFrame(columns=["اسم المورد", "رقم الجوال", "ملاحظات"]).to_csv("suppliers.csv", index=False)
     if not os.path.exists("sizes.csv"):
-        # المقاسات الجاهزة التي ستنشأ تلقائياً
+        # تحديد المقاسات كنصوص (dtype=str) لتجنب ضياع الأصفار
         pd.DataFrame({"المقاس": ["000", "00", "0", "1", "2", "3", "4", "5", "6", "7"]}).to_csv("sizes.csv", index=False)
 
 init_files()
@@ -30,7 +30,6 @@ if not st.session_state.authenticated:
     st.markdown("<h1 style='text-align: center;'>🥋 نظام إدارة متجر الكيوكوشن</h1>", unsafe_allow_html=True)
     st.markdown("<h3 style='text-align: center;'>الرجاء إدخال الرقم السري</h3>", unsafe_allow_html=True)
     
-    # مربع إدخال الرقم السري
     with st.form("login_form"):
         pin_input = st.text_input("الرقم السري:", type="password")
         submit_btn = st.form_submit_button("دخول")
@@ -41,14 +40,14 @@ if not st.session_state.authenticated:
                 st.rerun()
             else:
                 st.error("❌ الرقم السري غير صحيح!")
-    st.stop() # إيقاف الكود هنا حتى يتم إدخال الرقم الصحيح
+    st.stop()
 
 # ==========================================
-# --- التطبيق الرئيسي (بعد تسجيل الدخول) ---
+# --- التطبيق الرئيسي ---
 # ==========================================
 
 # --- الشريط الجانبي (Sidebar) ---
-st.sidebar.image(IMAGE_URL, use_container_width=True) # عرض الشعار
+st.sidebar.image(IMAGE_URL, use_container_width=True) # الشعار الواضح
 st.sidebar.markdown("---")
 st.sidebar.header("القائمة الرئيسية")
 
@@ -59,8 +58,8 @@ if st.sidebar.button("تسجيل الخروج 🔒"):
     st.session_state.authenticated = False
     st.rerun()
 
-# --- قراءة البيانات المخزنة ---
-df_sizes = pd.read_csv("sizes.csv")
+# --- قراءة المقاسات كنصوص (dtype=str) لحماية الأصفار 000 و 00 ---
+df_sizes = pd.read_csv("sizes.csv", dtype=str)
 
 # ==========================================
 # 1. صفحة المبيعات
@@ -68,7 +67,6 @@ df_sizes = pd.read_csv("sizes.csv")
 if menu == "المبيعات 🛒":
     st.title("🛒 إدارة المبيعات")
     
-    # clear_on_submit=True هي المسؤولة عن التنظيف التلقائي!
     with st.form("add_sale_form", clear_on_submit=True):
         st.subheader("إضافة مبيعة جديدة")
         col1, col2 = st.columns(2)
@@ -78,20 +76,20 @@ if menu == "المبيعات 🛒":
             phone = st.text_input("رقم الجوال")
         with col2:
             item = st.text_input("المنتج (مثال: بدلة، واقيات)")
-            size = st.selectbox("المقاس", df_sizes["المقاس"].tolist()) # قائمة المقاسات
+            size = st.selectbox("المقاس", df_sizes["المقاس"].tolist()) # سيعرض 000 ثم 00 ثم 0 بدقة
             price = st.number_input("السعر", min_value=0.0, step=10.0)
             
         save_sale = st.form_submit_button("حفظ المبيعة 💾")
         
         if save_sale:
-            new_sale = pd.DataFrame({"التاريخ": [date], "اسم العميل": [customer_name], "رقم الجوال": [phone], "المنتج": [item], "المقاس": [size], "السعر": [price]})
+            new_sale = pd.DataFrame({"التاريخ": [date], "اسم العميل": [customer_name], "رقم الجوال": [phone], "المنتج": [item], "المقاس": [str(size)], "السعر": [price]})
             new_sale.to_csv("sales.csv", mode='a', header=False, index=False)
-            st.success("✅ تم الحفظ! (تم تفريغ الخانات تلقائياً)")
+            st.success("✅ تم الحفظ وتفريغ الخانات تلقائياً!")
             st.rerun()
 
     st.markdown("---")
     st.subheader("📊 سجل المبيعات")
-    st.dataframe(pd.read_csv("sales.csv"), use_container_width=True)
+    st.dataframe(pd.read_csv("sales.csv", dtype=str), use_container_width=True)
 
 # ==========================================
 # 2. صفحة الموردين 
@@ -111,14 +109,14 @@ elif menu == "الموردين 🤝":
             if supp_name:
                 new_supp = pd.DataFrame({"اسم المورد": [supp_name], "رقم الجوال": [supp_phone], "ملاحظات": [supp_notes]})
                 new_supp.to_csv("suppliers.csv", mode='a', header=False, index=False)
-                st.success("✅ تم حفظ المورد! (تم تفريغ الخانات لجاهزية الإدخال التالي)")
+                st.success("✅ تم حفظ المورد بنجاح!")
                 st.rerun()
             else:
                 st.error("❌ يجب كتابة اسم المورد على الأقل.")
                 
     st.markdown("---")
     st.subheader("📋 قائمة الموردين")
-    st.dataframe(pd.read_csv("suppliers.csv"), use_container_width=True)
+    st.dataframe(pd.read_csv("suppliers.csv", dtype=str), use_container_width=True)
 
 # ==========================================
 # 3. صفحة إدارة المقاسات
@@ -133,8 +131,8 @@ elif menu == "دفتر المقاسات 📏":
         save_size = st.form_submit_button("إضافة المقاس ➕")
         
         if save_size:
-            if new_size and new_size not in df_sizes["المقاس"].astype(str).tolist():
-                new_size_df = pd.DataFrame({"المقاس": [new_size]})
+            if new_size and new_size not in df_sizes["المقاس"].tolist():
+                new_size_df = pd.DataFrame({"المقاس": [str(new_size)]})
                 new_size_df.to_csv("sizes.csv", mode='a', header=False, index=False)
                 st.success(f"✅ تم إضافة المقاس ({new_size}) بنجاح!")
                 st.rerun()
@@ -143,4 +141,4 @@ elif menu == "دفتر المقاسات 📏":
                 
     st.markdown("---")
     st.subheader("📋 المقاسات المتوفرة")
-    st.dataframe(pd.read_csv("sizes.csv"), use_container_width=True)
+    st.dataframe(df_sizes, use_container_width=True)
