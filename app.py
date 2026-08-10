@@ -5,22 +5,47 @@ import os
 # --- 1. إعدادات الصفحة ---
 st.set_page_config(page_title="نظام الكاراتيه", page_icon="🥋", layout="wide")
 
-# --- 2. المتغيرات الأساسية ---
+# --- 2. تطبيق تأثير الخلفية المائية (الكانجي بلون رصاصي خفيف في كل الشاشات) ---
+background_css = """
+<style>
+/* خلفية مائية لشعار الكانجي في جميع الشاشات */
+.stApp {
+    background-image: url("https://upload.wikimedia.org/wikipedia/commons/1/12/Kyokushin_kanji.svg");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 40% auto;
+    background-attachment: fixed;
+}
+/* إضافة طبقة شفافة خفيفة جداً لضمان قراءة النصوص فوق الخلفية بوضوح */
+.stApp::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(14, 17, 23, 0.92); /* خلفية داكنة متناسقة مع الشفافية */
+    z-index: -1;
+}
+</style>
+"""
+st.markdown(background_css, unsafe_allow_html=True)
+
+# --- 3. المتغيرات الأساسية ---
 SECRET_PIN = "1234"  # الرقم السري للدخول
 
-# --- 3. إنشاء ملفات البيانات محلياً (مع قراءة المقاسات كنصوص حصرياً) ---
+# --- 4. إنشاء ملفات البيانات محلياً (مع قراءة المقاسات كنصوص حصرياً) ---
 def init_files():
     if not os.path.exists("sales.csv"):
         pd.DataFrame(columns=["التاريخ", "اسم العميل", "رقم الجوال", "المنتج", "المقاس", "السعر"]).to_csv("sales.csv", index=False)
     if not os.path.exists("suppliers.csv"):
         pd.DataFrame(columns=["اسم المورد", "رقم الجوال", "ملاحظات"]).to_csv("suppliers.csv", index=False)
     if not os.path.exists("sizes.csv"):
-        # تحديد المقاسات كنصوص (dtype=str) لتجنب ضياع الأصفار
         pd.DataFrame({"المقاس": ["000", "00", "0", "1", "2", "3", "4", "5", "6", "7"]}).to_csv("sizes.csv", index=False)
 
 init_files()
 
-# --- 4. شاشة الحماية (تسجيل الدخول) ---
+# --- 5. شاشة الحماية (تسجيل الدخول) ---
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
@@ -45,14 +70,8 @@ if not st.session_state.authenticated:
 # ==========================================
 
 # --- الشريط الجانبي (Sidebar) ---
-# عرض الصورة الأولى (الكانكوداي)
-if os.path.exists("IMG_2543.jpeg"):
-    st.sidebar.image("IMG_2543.jpeg", use_container_width=True)
-
-# عرض الصورة الثانية (الكانجي)
-if os.path.exists("IMG_2544.jpeg"):
-    st.sidebar.image("IMG_2544.jpeg", use_container_width=True)
-
+st.sidebar.markdown("<h1 style='text-align: center;'>🥋 极真会</h1>", unsafe_allow_html=True)
+st.sidebar.markdown("<h3 style='text-align: center; color: #ff4b4b;'>KYOKUSHIN</h3>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
 st.sidebar.header("القائمة الرئيسية")
 
@@ -81,7 +100,7 @@ if menu == "المبيعات 🛒":
             phone = st.text_input("رقم الجوال")
         with col2:
             item = st.text_input("المنتج (مثال: بدلة، واقيات)")
-            size = st.selectbox("المقاس", df_sizes["المقاس"].tolist()) # سيعرض 000 ثم 00 ثم 0 بدقة
+            size = st.selectbox("المقاس", df_sizes["المقاس"].tolist())
             price = st.number_input("السعر", min_value=0.0, step=10.0)
             
         save_sale = st.form_submit_button("حفظ المبيعة 💾")
