@@ -77,7 +77,7 @@ if menu == "المبيعات 🛒":
         with col2:
             item = st.text_input("المنتج (مثال: بدلة، واقيات)")
             size = st.selectbox("المقاس", df_sizes["المقاس"].tolist())
-            price = st.number_input("السعر", min_value=0.0, step10.0) if hasattr(st, 'number_input') else st.number_input("السعر", min_value=0.0, step=10.0)
+            price = st.number_input("السعر", min_value=0.0, step=10.0)
             
         save_sale = st.form_submit_button("حفظ المبيعة 💾")
         
