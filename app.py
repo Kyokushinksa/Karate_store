@@ -7,8 +7,6 @@ st.set_page_config(page_title="نظام الكاراتيه", page_icon="🥋", l
 
 # --- 2. المتغيرات الأساسية ---
 SECRET_PIN = "1234"  # الرقم السري للدخول
-# رابط شعار الكيوكوشن المباشر والآمن
-IMAGE_URL = "https://upload.wikimedia.org/wikipedia/commons/1/12/Kyokushin_kanji.svg" 
 
 # --- 3. إنشاء ملفات البيانات محلياً (مع قراءة المقاسات كنصوص حصرياً) ---
 def init_files():
@@ -47,7 +45,14 @@ if not st.session_state.authenticated:
 # ==========================================
 
 # --- الشريط الجانبي (Sidebar) ---
-st.sidebar.image(IMAGE_URL, use_container_width=True) # الشعار الواضح
+# عرض الصورة الأولى (الكانكوداي)
+if os.path.exists("IMG_2543.jpeg"):
+    st.sidebar.image("IMG_2543.jpeg", use_container_width=True)
+
+# عرض الصورة الثانية (الكانجي)
+if os.path.exists("IMG_2544.jpeg"):
+    st.sidebar.image("IMG_2544.jpeg", use_container_width=True)
+
 st.sidebar.markdown("---")
 st.sidebar.header("القائمة الرئيسية")
 
