@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import os
-from streamlit_javascript import st_javascript  # نحتاجها لربط الجوال
 
 # --- 1. إعدادات الصفحة ---
 st.set_page_config(page_title="نظام الكاراتيه", page_icon="🥋", layout="wide")
@@ -19,51 +18,6 @@ def init_files():
         pd.DataFrame({"المقاس": ["000", "00", "0", "1", "2", "3", "4", "5", "6", "7"]}).to_csv("sizes.csv", index=False)
 
 init_files()
-
-# --- دالة زر اختيار جهات الاتصال (Contact Picker API) ---
-def contact_picker_button(input_key):
-    # زر HTML + JavaScript صغير يفتح جهات اتصال الهاتف
-    html_code = f"""
-    <div style="display: flex; align-items: center;">
-        <button type="button" onclick="pickContact_{input_key}()" style="
-            background-color: #ff4b4b; 
-            color: white; 
-            border: none; 
-            padding: 8px 12px; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            font-size: 14px;
-            font-family: sans-serif;
-            width: 100%;
-        ">
-            👥 اختيار من جهات الاتصال
-        </button>
-    </div>
-    
-    <script>
-    async function pickContact_{input_key}() {{
-        if ('contacts' in navigator && 'select' in navigator.contacts) {{
-            try {{
-                const contacts = await navigator.contacts.select(['tel'], {{ multiple: false }});
-                if (contacts.length > 0 && contacts[0].tel && contacts[0].tel.length > 0) {{
-                    const phoneNum = contacts[0].tel[0];
-                    // إرسال الرقم المختار إلى سكريبت ستريمليت عبر تحديث الـ URL أو عنصر مخفي
-                    const inputField = window.parent.document.querySelector('input[aria-label*="{input_key}"]');
-                    if (inputField) {{
-                        inputField.value = phoneNum;
-                        inputField.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                    }}
-                }}
-            }} catch (ex) {{
-                console.log('تم إلغاء الاختيار', ex);
-            }}
-        }} else {{
-            alert('خاصية الوصول لجهات الاتصال غير مدعومة في هذا المتصفح (استخدم Chrome للأندرويد أو Safari للإيفون).');
-        }}
-    }}
-    </script>
-    """
-    st.components.v1.html(html_code, height=45)
 
 # --- 4. شاشة الحماية (تسجيل الدخول) ---
 if 'authenticated' not in st.session_state:
@@ -119,14 +73,11 @@ if menu == "المبيعات 🛒":
         with col1:
             date = st.date_input("التاريخ")
             customer_name = st.text_input("اسم العميل")
-            phone = st.text_input("رقم الجوال للعميل", key="رقم الجوال للعميل")
-            # إضافة زر جهات الاتصال تحت خانة الجوال مباشرة
-            contact_picker_button("رقم الجوال للعميل")
-            
+            phone = st.text_input("رقم الجوال")
         with col2:
             item = st.text_input("المنتج (مثال: بدلة، واقيات)")
             size = st.selectbox("المقاس", df_sizes["المقاس"].tolist())
-            price = st.number_input("السعر", min_value=0.0, step=10.0)
+            price = st.number_input("السعر", min_value=0.0, step10.0) if hasattr(st, 'number_input') else st.number_input("السعر", min_value=0.0, step=10.0)
             
         save_sale = st.form_submit_button("حفظ المبيعة 💾")
         
@@ -149,9 +100,7 @@ elif menu == "الموردين 🤝":
     with st.form("add_supplier_form", clear_on_submit=True):
         st.subheader("إضافة مورد جديد")
         supp_name = st.text_input("اسم المورد")
-        supp_phone = st.text_input("رقم جوال المورد", key="رقم جوال المورد")
-        contact_picker_button("رقم جوال المورد")
-        
+        supp_phone = st.text_input("رقم الجوال")
         supp_notes = st.text_area("تفاصيل / ملاحظات")
         
         save_supplier = st.form_submit_button("حفظ المورد 💾")
