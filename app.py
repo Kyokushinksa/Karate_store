@@ -5,36 +5,10 @@ import os
 # --- 1. إعدادات الصفحة ---
 st.set_page_config(page_title="نظام الكاراتيه", page_icon="🥋", layout="wide")
 
-# --- 2. تطبيق تأثير الخلفية المائية (الكانجي بلون رصاصي خفيف في كل الشاشات) ---
-background_css = """
-<style>
-/* خلفية مائية لشعار الكانجي في جميع الشاشات */
-.stApp {
-    background-image: url("https://upload.wikimedia.org/wikipedia/commons/1/12/Kyokushin_kanji.svg");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 40% auto;
-    background-attachment: fixed;
-}
-/* إضافة طبقة شفافة خفيفة جداً لضمان قراءة النصوص فوق الخلفية بوضوح */
-.stApp::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(14, 17, 23, 0.92); /* خلفية داكنة متناسقة مع الشفافية */
-    z-index: -1;
-}
-</style>
-"""
-st.markdown(background_css, unsafe_allow_html=True)
-
-# --- 3. المتغيرات الأساسية ---
+# --- 2. المتغيرات الأساسية ---
 SECRET_PIN = "1234"  # الرقم السري للدخول
 
-# --- 4. إنشاء ملفات البيانات محلياً (مع قراءة المقاسات كنصوص حصرياً) ---
+# --- 3. إنشاء ملفات البيانات محلياً (مع قراءة المقاسات كنصوص حصرياً) ---
 def init_files():
     if not os.path.exists("sales.csv"):
         pd.DataFrame(columns=["التاريخ", "اسم العميل", "رقم الجوال", "المنتج", "المقاس", "السعر"]).to_csv("sales.csv", index=False)
@@ -45,7 +19,7 @@ def init_files():
 
 init_files()
 
-# --- 5. شاشة الحماية (تسجيل الدخول) ---
+# --- 4. شاشة الحماية (تسجيل الدخول) ---
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
@@ -70,7 +44,10 @@ if not st.session_state.authenticated:
 # ==========================================
 
 # --- الشريط الجانبي (Sidebar) ---
-st.sidebar.markdown("<h1 style='text-align: center;'>🥋 极真会</h1>", unsafe_allow_html=True)
+# عرض صورة الكانجي أو الكانكوداي التي رفعتها مسبقاً (`IMG_2543.jpeg` أو `IMG_2544.jpeg`) بحجم مرتب ومتناسق
+if os.path.exists("IMG_2543.jpeg"):
+    st.sidebar.image("IMG_2543.jpeg", use_container_width=True)
+
 st.sidebar.markdown("<h3 style='text-align: center; color: #ff4b4b;'>KYOKUSHIN</h3>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
 st.sidebar.header("القائمة الرئيسية")
